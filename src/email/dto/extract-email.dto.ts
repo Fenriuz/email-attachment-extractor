@@ -9,4 +9,3 @@ export class ExtractEmailDto {
   @IsString()
   path?: string;
 }
-

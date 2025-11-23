@@ -9,11 +9,14 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as fs from 'fs';
 
+// Type for generic JSON object since the structure isn't strictly defined
+export type JsonResponse = Record<string, unknown> | Array<unknown>;
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
-  async processEmail(source: string): Promise<any> {
+  async processEmail(source: string): Promise<JsonResponse> {
     this.logger.log(`Processing email from source: ${source}`);
 
     const emailBuffer = await this.getEmailContent(source);
@@ -22,13 +25,15 @@ export class EmailService {
     try {
       parsed = await simpleParser(emailBuffer);
     } catch (error) {
-      throw new BadRequestException(`Failed to parse email: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to parse email: ${(error as Error).message}`,
+      );
     }
 
     // Extraction Strategy
     // Strategy 1: Attachments
     this.logger.log('Checking attachments for JSON...');
-    const attachmentJson = await this.extractJsonFromAttachments(parsed);
+    const attachmentJson = this.extractJsonFromAttachments(parsed);
     if (attachmentJson) {
       this.logger.log('JSON found in attachments.');
       return attachmentJson;
@@ -51,10 +56,10 @@ export class EmailService {
         const response = await axios.get(source, {
           responseType: 'arraybuffer',
         });
-        return Buffer.from(response.data);
+        return Buffer.from(response.data as ArrayBuffer);
       } catch (error) {
         throw new BadRequestException(
-          `Failed to fetch email from URL: ${error.message}`,
+          `Failed to fetch email from URL: ${(error as Error).message}`,
         );
       }
     } else {
@@ -64,24 +69,24 @@ export class EmailService {
       try {
         return fs.readFileSync(source);
       } catch (error) {
-        throw new BadRequestException(`Failed to read file: ${error.message}`);
+        throw new BadRequestException(
+          `Failed to read file: ${(error as Error).message}`,
+        );
       }
     }
   }
 
-  private async extractJsonFromAttachments(
-    parsed: ParsedMail,
-  ): Promise<any | null> {
+  private extractJsonFromAttachments(parsed: ParsedMail): JsonResponse | null {
     if (!parsed.attachments || parsed.attachments.length === 0) return null;
 
     for (const attachment of parsed.attachments) {
       if (this.isJsonAttachment(attachment)) {
         try {
           const content = attachment.content.toString('utf-8');
-          return JSON.parse(content);
+          return JSON.parse(content) as JsonResponse;
         } catch (e) {
           this.logger.warn(
-            `Found JSON attachment ${attachment.filename} but failed to parse: ${e.message}`,
+            `Found JSON attachment ${attachment.filename} but failed to parse: ${(e as Error).message}`,
           );
         }
       }
@@ -102,7 +107,7 @@ export class EmailService {
   private async extractJsonFromLinks(
     html: string | false,
     text: string | undefined,
-  ): Promise<any | null> {
+  ): Promise<JsonResponse | null> {
     const links = new Set<string>();
 
     // Extract from HTML
@@ -134,7 +139,7 @@ export class EmailService {
     return null;
   }
 
-  private async checkLinkForJson(url: string): Promise<any | null> {
+  private async checkLinkForJson(url: string): Promise<JsonResponse | null> {
     try {
       this.logger.debug(`Checking link: ${url}`);
       const response = await axios.get(url, {
@@ -144,14 +149,15 @@ export class EmailService {
 
       if (response.status !== 200) return null;
 
-      const contentType = response.headers['content-type'] || '';
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const contentType: string = response.headers['content-type'] || '';
 
       // Case: Direct JSON
       if (
         contentType.includes('application/json') ||
         (typeof response.data === 'object' && response.data !== null)
       ) {
-        return response.data;
+        return response.data as JsonResponse;
       }
 
       // Case: Indirect Link (HTML page)
@@ -162,7 +168,9 @@ export class EmailService {
         return this.extractJsonFromHtmlPage(response.data, url);
       }
     } catch (error) {
-      this.logger.debug(`Failed to check link ${url}: ${error.message}`);
+      this.logger.debug(
+        `Failed to check link ${url}: ${(error as Error).message}`,
+      );
     }
     return null;
   }
@@ -170,7 +178,7 @@ export class EmailService {
   private async extractJsonFromHtmlPage(
     html: string,
     baseUrl: string,
-  ): Promise<any | null> {
+  ): Promise<JsonResponse | null> {
     const $ = cheerio.load(html);
     const links = new Set<string>();
     $('a').each((_, element) => {
@@ -183,7 +191,7 @@ export class EmailService {
       let absoluteUrl = link;
       try {
         absoluteUrl = new URL(link, baseUrl).toString();
-      } catch (e) {
+      } catch {
         continue; // Invalid URL
       }
 
@@ -192,16 +200,19 @@ export class EmailService {
         try {
           this.logger.debug(`Checking indirect link: ${absoluteUrl}`);
           const jsonResponse = await axios.get(absoluteUrl, { timeout: 5000 });
+
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const contentType: string =
+            jsonResponse.headers['content-type'] || '';
+
           if (
             jsonResponse.status === 200 &&
-            (jsonResponse.headers['content-type']?.includes(
-              'application/json',
-            ) ||
+            (contentType.includes('application/json') ||
               typeof jsonResponse.data === 'object')
           ) {
-            return jsonResponse.data;
+            return jsonResponse.data as JsonResponse;
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
