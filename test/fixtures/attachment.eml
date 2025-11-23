@@ -1,0 +1,24 @@
+MIME-Version: 1.0
+Date: Mon, 23 Jan 2025 10:00:00 -0500
+From: Sender <sender@example.com>
+To: Recipient <recipient@example.com>
+Subject: Test Email with JSON Attachment
+Content-Type: multipart/mixed; boundary="boundary_json_attachment"
+
+--boundary_json_attachment
+Content-Type: text/plain; charset="UTF-8"
+
+Please find the JSON file attached.
+
+--boundary_json_attachment
+Content-Type: application/json; name="data.json"
+Content-Disposition: attachment; filename="data.json"
+Content-Transfer-Encoding: 7bit
+
+{
+  "id": 1,
+  "message": "Hello from attachment!",
+  "source": "attachment.eml"
+}
+--boundary_json_attachment--
+

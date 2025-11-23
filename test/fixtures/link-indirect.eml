@@ -1,0 +1,13 @@
+MIME-Version: 1.0
+Date: Mon, 23 Jan 2025 10:10:00 -0500
+From: Sender <sender@example.com>
+To: Recipient <recipient@example.com>
+Subject: Test Email with Indirect Link to JSON
+Content-Type: text/html; charset="UTF-8"
+
+<html>
+  <body>
+    <p>Here is the link to the page where you can download the JSON:</p>
+    <p><a href="http://localhost:3000/landing-page.html">Go to Download Page</a></p>
+  </body>
+</html>

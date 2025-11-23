@@ -22,4 +22,20 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect('Hello World!');
   });
+
+  it('/email/json (GET) - should return 400 if no params', () => {
+    return request(app.getHttpServer())
+      .get('/email/json')
+      .expect(400)
+      .expect((res) => {
+        if (
+          res.body.message !==
+          'Either "url" or "path" query parameter is required'
+        ) {
+          throw new Error(
+            'Unexpected error message: ' + JSON.stringify(res.body),
+          );
+        }
+      });
+  });
 });
