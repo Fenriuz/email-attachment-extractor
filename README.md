@@ -67,3 +67,10 @@ curl "http://localhost:3000/email/json?url=https://raw.githubusercontent.com/Fen
 -   `src/email/`: Core logic (Module, Controller, Service).
 -   `test/fixtures/`: Sample `.eml` files for testing.
 -   `public/`: Static files served to simulate external websites for link testing.
+
+## Demo
+
+
+https://github.com/user-attachments/assets/0428ae69-2b1c-480e-9c2b-55973f6f6ee5
+
+
