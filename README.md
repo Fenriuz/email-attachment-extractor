@@ -42,13 +42,7 @@ Extracts JSON from a link in the email body pointing to an external JSON file.
 curl "http://localhost:3000/email/json?path=test/fixtures/link-direct.eml"
 ```
 
-#### 3. Direct Link (Local Hosted)
-Extracts JSON from a link in the email body pointing to a locally hosted JSON file (served by this app for testing).
-```bash
-curl "http://localhost:3000/email/json?path=test/fixtures/link-direct-local.eml"
-```
-
-#### 4. Indirect Link (Scraping)
+#### 3. Indirect Link (Scraping)
 Extracts JSON by following a link to a landing page, then finding the JSON link on that page.
 ```bash
 curl "http://localhost:3000/email/json?path=test/fixtures/link-indirect.eml"
